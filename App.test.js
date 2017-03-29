@@ -2,8 +2,8 @@ import React from 'react';
 import firebase from 'firebase';
 import renderer from 'react-test-renderer';
 import FirebaseServer from 'firebase-server';
-import MobxFirebaseStore from 'mobx-firebase-store';
 import AppComponent from './components/AppComponent';
+import Store from './store';
 
 //NOTE: Requires entry to be added to your host file (e.g. /etc/hosts)
 //127.0.0.1 localhost.firebaseio.test
@@ -18,8 +18,8 @@ jest.mock('firebase/auth-node', ((...args) => {
 jest.mock('mobx-react/native', () => require('mobx-react/custom'));
 
 // real GiftedChat doesn't get the onLayout event which is required for it to render messages
-jest.mock('./src/GiftedChatWrapper', () => {
-  const actual = require.requireActual('./src/GiftedChatWrapper');
+jest.mock('./components/GiftedChatWrapper', () => {
+  const actual = require.requireActual('./components/GiftedChatWrapper');
   const React = require('react');
   class MyGiftedChat extends React.Component {
     render() {
@@ -52,7 +52,7 @@ describe('Chat app', () => {
     const fbApp = firebase.initializeApp(config, 'TestingEnvironment');
     const fb = firebase.database(fbApp).ref();
 
-    store = new MobxFirebaseStore(fb);
+    store = new Store(fb);
   });
 
   afterEach(function () {

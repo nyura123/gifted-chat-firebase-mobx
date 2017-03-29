@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import MobxFirebaseStore from 'mobx-firebase-store';
 import firebase from 'firebase';
 import AppComponent from './components/AppComponent'
+import Store from './store';
 
 //Store
 const fbApp =  firebase.initializeApp({
@@ -12,6 +12,6 @@ const fbApp =  firebase.initializeApp({
   storageBucket: 'testing-3bba1.firebaseio.com'
 }, 'chatApp');
 
-const store = new MobxFirebaseStore(firebase.database(fbApp).ref());
+const store = new Store(firebase.database(fbApp).ref());
 
 export default () => <AppComponent store={store} />
