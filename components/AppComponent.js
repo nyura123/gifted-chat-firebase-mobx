@@ -69,7 +69,7 @@ function limitedMessages(limitTo, fbRef) {
   return [{
     subKey: limitedMessagesSubKey(limitTo),
     asList: true,
-    resolveFirebaseRef: () => fbRef.child('chat/messages'),//.limitToLast(limitTo || 1),
+    resolveFirebaseRef: () => fbRef.child('chat/messages').limitToLast(limitTo || 1),
     childSubs: (messageKey, messageData) => !messageData.uid ? [] : [{
       subKey: userSubKey(messageData.uid),
       asValue: true,
@@ -86,6 +86,10 @@ function deferredUnsubscribe(unsubscribe) {
 //Chat component
 @observer
 class ChatComponent extends React.Component {
+  static propTypes = {
+    store: PropTypes.object.isRequired
+  }
+
   state = {
     fetching: false,
     limitTo: 10,

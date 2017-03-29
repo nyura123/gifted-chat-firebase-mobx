@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import MobxFirebaseStore from 'mobx-firebase-store';
 import firebase from 'firebase';
-import AppComponent from './src/AppComponent'
+import AppComponent from './components/AppComponent'
 
 //Store
 const fbApp =  firebase.initializeApp({

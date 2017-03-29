@@ -3,7 +3,7 @@ import firebase from 'firebase';
 import renderer from 'react-test-renderer';
 import FirebaseServer from 'firebase-server';
 import MobxFirebaseStore from 'mobx-firebase-store';
-import AppComponent from './src/AppComponent';
+import AppComponent from './components/AppComponent';
 
 //NOTE: Requires entry to be added to your host file (e.g. /etc/hosts)
 //127.0.0.1 localhost.firebaseio.test

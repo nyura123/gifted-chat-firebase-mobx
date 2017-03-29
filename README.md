@@ -2,6 +2,12 @@
 
 #### Gifted Chat example -- using mobx and firebase
 
+Steps to run in iOS simulator (assuming XCode is installed)
+1. `npm install`
+2. `npm run ios`
+
+e2e app test included:
+`npm test`
 
 
 This project was bootstrapped with [Create React Native App](https://github.com/react-community/create-react-native-app).
