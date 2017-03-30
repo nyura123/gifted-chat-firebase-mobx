@@ -1,5 +1,6 @@
 
 import MobxFirebaseStore from 'mobx-firebase-store';
+import {action, observable, computed} from 'mobx';
 
 // Assumes the following firebase data model:
 //  messages: {key1: {text, timestamp, uid}, key2: {text, timestamp, uid}, ...}
@@ -8,34 +9,42 @@ import MobxFirebaseStore from 'mobx-firebase-store';
 
 //Subscriptions
 function limitedMessagesSubKey(limitTo) {
-  return `msgs_limitedTo_${limitTo}`
+  return `msgs_limitedTo_${limitTo}`;
 }
 
 function userSubKey(uid) {
-  return `usr_${uid}`
+  return `usr_${uid}`;
+}
+
+function deferredUnsubscribe(unsubscribe) {
+  //optimization to avoid flickering when paginating - keep current data for a bit while we wait for new query that includes older items
+  return () => setTimeout(() => unsubscribe(), 1000);
 }
 
 export default class Store {
-  constructor(fbRef) {
+  constructor(fbRef, limitTo = 1) {
     this.mobxStore = new MobxFirebaseStore(fbRef);
+    this.pagination = observable({
+      limitTo,
+      prevLimitTo: null
+    });
   }
 
   subscribeSubsWithPromise(subs) {
-    return this.mobxStore.rawSubscribeSubsWithPromie(subs);
-  }
-
-  subscribeSubs(subs) {
-    return this.mobxStore.subscribeSubs(subs);
+    const { promise, unsubscribe } = this.mobxStore.subscribeSubsWithPromise(subs);
+    return { promise, unsubscribe: deferredUnsubscribe(unsubscribe)};
   }
   
   //Getters
-  
-  messagesInGiftedChatFormat({limitTo, prevLimitTo}) {
+
+  @computed get messagesInGiftedChatFormat() {
+    const { limitTo, prevLimitTo } = this.pagination;
+    
     let msgs = this.mobxStore.getData(limitedMessagesSubKey(limitTo));
 
     //optimization to avoid flickering while paginating - try to get previous subscription's data while we're loading older items
     if (!msgs && prevLimitTo) {
-      msgs = this.mobxStore.getData(limitedMessagesSubKey(prevLimitTo))
+      msgs = this.mobxStore.getData(limitedMessagesSubKey(prevLimitTo));
     }
 
     if (!msgs) {
@@ -49,7 +58,7 @@ export default class Store {
       const user = (uid ? this.mobxStore.getData(userSubKey(uid)) : null);
 
       //Gifted message will not update unless msgKey changes. So as user info comes in, add user's info to the message key
-      const userInfoHash = user ? `${user.get('first')}_${user.get('last')}` : ''
+      const userInfoHash = user ? `${user.get('first')}_${user.get('last')}` : '';
 
       return {
         _id: msgKey + userInfoHash,
@@ -70,24 +79,35 @@ export default class Store {
   }
   
   //Write to firebase
-  
+  @action
   addMessage({text, uid, timestamp}) {
     return this.mobxStore.fb.child('chat').child('messages').push({text, uid, timestamp})
   }
   
+  //Increase query limit
+  @action
+  increaseLimitToBy(incr) {
+    const prevLimitTo = this.pagination.limitTo;
+    this.pagination.limitTo = prevLimitTo + incr;
+    this.pagination.prevLimitTo = prevLimitTo;
+  }
+
   //Subscriptions
 
   //Get messages and user for each message
-  limitedMessagesSub(limitTo) {
+  limitedMessagesSub() {
+    const { limitTo } = this.pagination;
     const fbRef = this.mobxStore.fb;
     return [{
       subKey: limitedMessagesSubKey(limitTo),
       asList: true,
       resolveFirebaseRef: () => fbRef.child('chat/messages').limitToLast(limitTo || 1),
+      //onData: (type, snapshot) => console.log('got msgs ',type,snapshot.val()),
       childSubs: (messageKey, messageData) => !messageData.uid ? [] : [{
         subKey: userSubKey(messageData.uid),
         asValue: true,
-        resolveFirebaseRef: () => fbRef.child('chat/users').child(messageData.uid)
+        resolveFirebaseRef: () => fbRef.child('chat/users').child(messageData.uid),
+        //onData: (type, snapshot) => console.log('got user ',type,snapshot.val())
       }]
     }]
   }

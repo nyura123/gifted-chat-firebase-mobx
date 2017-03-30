@@ -4,11 +4,6 @@ import GiftedChat from './GiftedChatWrapper';
 import { inject, Provider, observer } from 'mobx-react/native';
 import { createAutoSubscriber } from 'firebase-nest';
 
-function deferredUnsubscribe(unsubscribe) {
-  //optimization to avoid flickering when paginating - keep current data for a bit while we wait for new query that includes older items
-  return () => setTimeout(() => unsubscribe(), 1000);
-}
-
 //Chat component
 @observer
 class ChatComponent extends React.Component {
@@ -18,8 +13,7 @@ class ChatComponent extends React.Component {
 
   state = {
     fetching: false,
-    limitTo: 10,
-    prevLimitTo: null
+    fetchError: null
   }
 
   //used by createAutoSubscriber HOC
@@ -46,15 +40,11 @@ class ChatComponent extends React.Component {
       })
     });
 
-    return deferredUnsubscribe(unsubscribe)
+    return unsubscribe;
   }
 
   onLoadEarlier = () => {
-    this.setState((previousState) => ({
-      ...previousState,
-      limitTo: previousState.limitTo + 10,
-      prevLimitTo: previousState.limitTo
-    }));
+    this.props.store.increaseLimitToBy(10);
   }
 
   onSend = (messages = []) => {
@@ -72,8 +62,8 @@ class ChatComponent extends React.Component {
 
   render() {
     const { store } = this.props;
-    const { limitTo, prevLimitTo, fetching, fetchError } = this.state;
-    const messages = store.messagesInGiftedChatFormat({limitTo, prevLimitTo});
+    const { fetching, fetchError } = this.state;
+    const messages = store.messagesInGiftedChatFormat;
     return (
       <GiftedChat
         messages={messages}
@@ -92,7 +82,7 @@ class ChatComponent extends React.Component {
 
 //Auto-subscriber Chat
 const Chat = inject('store')(createAutoSubscriber({
-  getSubs: (props, state) => props.store.limitedMessagesSub(state.limitTo)
+  getSubs: (props, state) => props.store.limitedMessagesSub()
   //defining subscribeSubs on the component for loading indicator
   // subscribeSubs: (subs, props, state) => props.util.subscribeSubs(subs)
 })(ChatComponent))
