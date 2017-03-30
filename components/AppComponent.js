@@ -1,6 +1,7 @@
 import React, { PropTypes } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import GiftedChat from './GiftedChatWrapper';
+import RegisterOrLogin from './RegisterOrLogin'
 import { inject, Provider, observer } from 'mobx-react/native';
 import { createAutoSubscriber } from 'firebase-nest';
 
@@ -62,27 +63,38 @@ class ChatComponent extends React.Component {
 
   render() {
     const { store } = this.props;
+    const isLoggedIn = !!store.authUser();
     const { fetching, fetchError } = this.state;
     const messages = store.messagesInGiftedChatFormat;
+    const loginComponentHeight = isLoggedIn ? 70 : 240;
     return (
-      <GiftedChat
-        messages={messages}
-        loadEarlier={true}
-        isLoadingEarlier={fetching}
-        onLoadEarlier={this.onLoadEarlier}
-        renderFooter={fetchError ? this.renderError : null}
-        onSend={this.onSend}
-        user={{
-          _id: 'cookiemonster' //who are we posting as
-        }}
-      />
+      <View style={{flex:1}}>
+        <View style={{height:loginComponentHeight}}>
+          <RegisterOrLogin  />
+        </View>
+        {isLoggedIn &&
+        <View style={{flex:1}}>
+          <GiftedChat
+            messages={messages}
+            loadEarlier={true}
+            isLoadingEarlier={fetching}
+            onLoadEarlier={this.onLoadEarlier}
+            renderFooter={fetchError ? this.renderError : null}
+            onSend={this.onSend}
+            user={{
+              _id: 'cookiemonster' //who are we posting as
+            }}
+          />
+        </View>
+        }
+      </View>
     )
   }
 }
 
 //Auto-subscriber Chat
 const Chat = inject('store')(createAutoSubscriber({
-  getSubs: (props, state) => props.store.limitedMessagesSub()
+  getSubs: (props, state) => props.store.authUser() ? props.store.limitedMessagesSub() : []
   //defining subscribeSubs on the component for loading indicator
   // subscribeSubs: (subs, props, state) => props.util.subscribeSubs(subs)
 })(ChatComponent))

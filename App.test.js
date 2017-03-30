@@ -50,9 +50,9 @@ describe('Chat app', () => {
     }
     server = new FirebaseServer(5000, 'localhost.firebaseio.test', mockFbData);
     const fbApp = firebase.initializeApp(config, 'TestingEnvironment');
-    const fb = firebase.database(fbApp).ref();
 
-    store = new Store(fb);
+    store = new Store(fbApp, {limitTo: 10, watchAuth: false} );
+    store.auth.authUser = {}; //fake being logged in
   });
 
   afterEach(function () {

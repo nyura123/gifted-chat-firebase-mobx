@@ -1,6 +1,7 @@
 
 import MobxFirebaseStore from 'mobx-firebase-store';
 import {action, observable, computed} from 'mobx';
+import firebase from 'firebase';
 
 // Assumes the following firebase data model:
 //  messages: {key1: {text, timestamp, uid}, key2: {text, timestamp, uid}, ...}
@@ -22,17 +23,37 @@ function deferredUnsubscribe(unsubscribe) {
 }
 
 export default class Store {
-  constructor(fbRef, limitTo = 1) {
-    this.mobxStore = new MobxFirebaseStore(fbRef);
+  constructor(fbApp, {limitTo = 10, watchAuth = true} = {}) {
+    this.fbApp = fbApp;
+
+    this.mobxStore = new MobxFirebaseStore(firebase.database(fbApp).ref());
     this.pagination = observable({
       limitTo,
       prevLimitTo: null
     });
+
+    //AUTH
+    this.auth = observable({
+      authUser: null
+    });
+
+    //TODO figure out when unwatchAuth should be called
+    if (watchAuth) {
+      this.unwatchAuth = firebase.auth(this.fbApp).onAuthStateChanged(user => {
+        this.auth.authUser = user;
+      });
+    }
   }
 
   subscribeSubsWithPromise(subs) {
     const { promise, unsubscribe } = this.mobxStore.subscribeSubsWithPromise(subs);
     return { promise, unsubscribe: deferredUnsubscribe(unsubscribe)};
+  }
+
+  cleanup() {
+    if (this.unwatchAuth) {
+      this.unwatchAuth();
+    }
   }
   
   //Getters
@@ -111,6 +132,26 @@ export default class Store {
       }]
     }]
   }
+
+  
+  //AUTH
+
+  authUser() {
+    return this.auth.authUser;
+  }
+
+  @action
+  signIn({email, password}) {
+    return firebase.auth(this.fbApp).signInWithEmailAndPassword(email, password);
+  }
+
+  @action
+  createUser({email, password}) {
+    return firebase.auth(this.fbApp).createUserWithEmailAndPassword(email, password);
+  }
+
+  @action
+  signOut() {
+    return firebase.auth(this.fbApp).signOut();
+  }
 }
-
-

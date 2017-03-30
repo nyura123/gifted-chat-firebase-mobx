@@ -12,6 +12,6 @@ const fbApp =  firebase.initializeApp({
   storageBucket: 'testing-3bba1.firebaseio.com'
 }, 'chatApp');
 
-const store = new Store(firebase.database(fbApp).ref());
+const store = new Store(fbApp);
 
 export default () => <AppComponent store={store} />
