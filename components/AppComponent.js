@@ -63,7 +63,7 @@ class ChatComponent extends React.Component {
 
   render() {
     const { store } = this.props;
-    const isLoggedIn = !!store.authUser();
+    const isLoggedIn = !!store.getAuthUser();
     const { fetching, fetchError } = this.state;
     const messages = store.messagesInGiftedChatFormat;
     const loginComponentHeight = isLoggedIn ? 70 : 240;
@@ -94,7 +94,7 @@ class ChatComponent extends React.Component {
 
 //Auto-subscriber Chat
 const Chat = inject('store')(createAutoSubscriber({
-  getSubs: (props, state) => props.store.authUser() ? props.store.limitedMessagesSub() : []
+  getSubs: (props, state) => props.store.getAuthUser() ? props.store.limitedMessagesSub() : []
   //defining subscribeSubs on the component for loading indicator
   // subscribeSubs: (subs, props, state) => props.util.subscribeSubs(subs)
 })(ChatComponent))

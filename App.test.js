@@ -52,7 +52,7 @@ describe('Chat app', () => {
     const fbApp = firebase.initializeApp(config, 'TestingEnvironment');
 
     store = new Store(fbApp, {limitTo: 10, watchAuth: false} );
-    store.auth.authUser = {}; //fake being logged in
+    store.authUser = {}; //fake being logged in
   });
 
   afterEach(function () {

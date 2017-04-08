@@ -37,7 +37,7 @@ export default class RegisterOrLogin extends Component {
             return;
         }
         const {store} = this.props;
-        this.setState({inProgress: 'Registering...'}, () => {
+        this.setState({localError: null, authError: null, inProgress: 'Registering...'}, () => {
             store.createUser({
                 email,
                 password
@@ -58,12 +58,39 @@ export default class RegisterOrLogin extends Component {
         }
 
         const {store} = this.props;
-        this.setState({inProgress: 'Logging In...'}, () => {
+        this.setState({localError: null, authError: null, inProgress: 'Logging In...'}, () => {
             store.signIn({
                 email,
                 password
             })
               .then(() => this.resetState())
+              .catch(error => this.resetState(error));
+        });
+    }
+
+    sendPasswordResetEmail = () => {
+        const {email} = this.state;
+
+        if (!email) {
+            this.setState({
+                localError: 'Enter email'
+            });
+            return;
+        }
+        const {store} = this.props;
+        this.setState({localError: null, authError: null, inProgress: 'Sending email...'}, () => {
+            store.sendPasswordResetEmail({
+                email
+            })
+              .then(() => {
+                  this.setState({
+                      inProgress: 'Email Sent!'
+                  }, () => {
+                    setTimeout(() => {
+                        this.resetState();
+                    }, 10000);
+                  });
+              })
               .catch(error => this.resetState(error));
         });
     }
@@ -135,6 +162,11 @@ export default class RegisterOrLogin extends Component {
                           Register
                       </Text>
                   </TouchableOpacity>
+                  <TouchableOpacity  onPress={this.sendPasswordResetEmail} style={{borderWidth: 1, borderColor: 'grey', justifyContent:'center', alignItems:'center', flex:1, height:50}}>
+                      <Text>
+                          Send Password Reset Email
+                      </Text>
+                  </TouchableOpacity>
               </View>
           </View>
         );
@@ -154,7 +186,7 @@ export default class RegisterOrLogin extends Component {
         const {localError, inProgress, authError} = this.state;
         const {store} = this.props;
 
-        const authUser = store.authUser();
+        const authUser = store.getAuthUser();
         
         return (
             <ScrollView keyboardShouldPersistTaps='never' contentContainerStyle={{marginTop:20, flexDirection:'column',alignItems:'center'}}>

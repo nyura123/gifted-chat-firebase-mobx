@@ -27,27 +27,16 @@ export default class Store {
     this.fbApp = fbApp;
 
     this.mobxStore = new MobxFirebaseStore(firebase.database(fbApp).ref());
-    this.pagination = observable({
-      limitTo,
-      prevLimitTo: null
-    });
-
+    
+    this.limitTo = limitTo;
+    
     //AUTH
-    this.auth = observable({
-      authUser: null
-    });
-
     //TODO figure out when unwatchAuth should be called
     if (watchAuth) {
       this.unwatchAuth = firebase.auth(this.fbApp).onAuthStateChanged(user => {
-        this.auth.authUser = user;
+        this.authUser = user;
       });
     }
-  }
-
-  subscribeSubsWithPromise(subs) {
-    const { promise, unsubscribe } = this.mobxStore.subscribeSubsWithPromise(subs);
-    return { promise, unsubscribe: deferredUnsubscribe(unsubscribe)};
   }
 
   cleanup() {
@@ -55,11 +44,18 @@ export default class Store {
       this.unwatchAuth();
     }
   }
+
+  //observables
+  @observable authUser = null;
+  @observable limitTo = 10;
+  @observable prevLimitTo = null;
   
   //Getters
 
+  getAuthUser() { return this.authUser; }
+
   @computed get messagesInGiftedChatFormat() {
-    const { limitTo, prevLimitTo } = this.pagination;
+    const { limitTo, prevLimitTo } = this;
     
     let msgs = this.mobxStore.getData(limitedMessagesSubKey(limitTo));
 
@@ -108,16 +104,21 @@ export default class Store {
   //Increase query limit
   @action
   increaseLimitToBy(incr) {
-    const prevLimitTo = this.pagination.limitTo;
-    this.pagination.limitTo = prevLimitTo + incr;
-    this.pagination.prevLimitTo = prevLimitTo;
+    const prevLimitTo = this.limitTo;
+    this.limitTo = prevLimitTo + incr;
+    this.prevLimitTo = prevLimitTo;
   }
 
   //Subscriptions
 
+  subscribeSubsWithPromise(subs) {
+    const { promise, unsubscribe } = this.mobxStore.subscribeSubsWithPromise(subs);
+    return { promise, unsubscribe: deferredUnsubscribe(unsubscribe)};
+  }
+
   //Get messages and user for each message
   limitedMessagesSub() {
-    const { limitTo } = this.pagination;
+    const { limitTo } = this;
     const fbRef = this.mobxStore.fb;
     return [{
       subKey: limitedMessagesSubKey(limitTo),
@@ -132,14 +133,7 @@ export default class Store {
       }]
     }]
   }
-
   
-  //AUTH
-
-  authUser() {
-    return this.auth.authUser;
-  }
-
   @action
   signIn({email, password}) {
     return firebase.auth(this.fbApp).signInWithEmailAndPassword(email, password);
@@ -153,5 +147,10 @@ export default class Store {
   @action
   signOut() {
     return firebase.auth(this.fbApp).signOut();
+  }
+
+  @action
+  sendPasswordResetEmail({email}) {
+    return firebase.auth(this.fbApp).sendPasswordResetEmail(email);
   }
 }
