@@ -12,40 +12,8 @@ class ChatComponent extends React.Component {
     store: PropTypes.object.isRequired
   }
 
-  state = {
-    fetching: false,
-    fetchError: null
-  }
-
-  //used by createAutoSubscriber HOC
-  subscribeSubs(subs, props, state) {
-    //More advanced version of subscribeSubs with loading indicator and error handling.
-
-    const { store } = this.props;
-
-    const {unsubscribe, promise} = store.subscribeSubsWithPromise(subs);
-
-    this.setState({
-      fetching: true,
-      fetchError: null
-    }, () => {
-      promise.then(() => {
-        this.setState({
-          fetching: false
-        })
-      }, (error) => {
-        this.setState({
-          fetching: false,
-          fetchError: error
-        })
-      })
-    });
-
-    return unsubscribe;
-  }
-
   onLoadEarlier = () => {
-    this.props.store.increaseLimitToBy(10);
+    this.props.store.increaseLimitToBy(2);
   }
 
   onSend = (messages = []) => {
@@ -64,7 +32,7 @@ class ChatComponent extends React.Component {
   render() {
     const { store } = this.props;
     const isLoggedIn = !!store.getAuthUser();
-    const { fetching, fetchError } = this.state;
+    const { _autoSubscriberFetching: fetching, _autoSubscriberError: fetchError } = this.state;
     const messages = store.messagesInGiftedChatFormat;
     const loginComponentHeight = isLoggedIn ? 70 : 240;
     return (
@@ -94,9 +62,8 @@ class ChatComponent extends React.Component {
 
 //Auto-subscriber Chat
 const Chat = inject('store')(createAutoSubscriber({
-  getSubs: (props, state) => props.store.getAuthUser() ? props.store.limitedMessagesSub() : []
-  //defining subscribeSubs on the component for loading indicator
-  // subscribeSubs: (subs, props, state) => props.util.subscribeSubs(subs)
+  getSubs: (props, state) => props.store.getAuthUser() ? props.store.limitedMessagesSub() : [],
+  subscribeSubs: (subs, props, state) => props.store.subscribeSubsWithPromise(subs)
 })(ChatComponent))
 
 export default class AppComponent extends React.Component {
