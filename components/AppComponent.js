@@ -25,7 +25,7 @@ class ChatComponent extends React.Component {
   }
 
   renderError = () => {
-    const { fetchError } = this.state;
+    const { _autoSubscriberError: fetchError } = this.state;
     return <Text style={{textAlign:'center', fontWeight:'bold', fontSize:13, color:'darkred'}}>{fetchError}</Text>
   }
 
